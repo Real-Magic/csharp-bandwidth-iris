@@ -5,11 +5,11 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Bandwidth.Iris.Tests
 {
-    public sealed class HttpServer: IDisposable
+    public sealed class HttpServer : IDisposable
     {
         private readonly RequestHandler[] _handlers;
         private readonly HttpListener _listener;
@@ -26,7 +26,7 @@ namespace Bandwidth.Iris.Tests
             if (handlers == null) throw new ArgumentNullException("handlers");
             _handlers = handlers;
             _listener = new HttpListener();
-            _listener.Prefixes.Add(prefix ?? "http://localhost:3001/");
+            _listener.Prefixes.Add(prefix ?? "http://localhost:5423/");
             _listener.Start();
             RequestCount = 0;
             StartHandleRequest();
@@ -43,7 +43,7 @@ namespace Bandwidth.Iris.Tests
 
         private async void HandlerRequest(Task<HttpListenerContext> obj)
         {
-            if(obj.Status == TaskStatus.Faulted) return;
+            if (obj.Status == TaskStatus.Faulted) return;
             var context = obj.Result;
             var handler = GetRequestHandler();
             try
@@ -53,25 +53,25 @@ namespace Bandwidth.Iris.Tests
                 var response = context.Response;
                 if (handler.EstimatedMethod != null)
                 {
-                    Assert.AreEqual(handler.EstimatedMethod, request.HttpMethod);
+                    Assert.Equal(handler.EstimatedMethod, request.HttpMethod);
                 }
                 if (handler.EstimatedPathAndQuery != null)
                 {
-                    Assert.AreEqual(handler.EstimatedPathAndQuery, request.Url.PathAndQuery);
+                    Assert.Equal(handler.EstimatedPathAndQuery, request.Url.PathAndQuery);
                 }
                 if (handler.EstimatedContent != null)
                 {
                     using (var reader = new StreamReader(request.InputStream, Encoding.UTF8))
                     {
                         var content = reader.ReadToEnd();
-                        Assert.AreEqual(handler.EstimatedContent, content);    
+                        Assert.Equal(handler.EstimatedContent, content);
                     }
                 }
                 if (handler.EstimatedHeaders != null)
                 {
                     foreach (var estimatedHeader in handler.EstimatedHeaders)
                     {
-                        Assert.AreEqual(estimatedHeader.Value, request.Headers[estimatedHeader.Key]);
+                        Assert.Equal(estimatedHeader.Value, request.Headers[estimatedHeader.Key]);
                     }
                 }
                 response.StatusCode = handler.StatusCodeToSend;
@@ -93,15 +93,15 @@ namespace Bandwidth.Iris.Tests
                     }
                     await handler.ContentToSend.CopyToAsync(response.OutputStream);
                 }
-                
+
                 response.Close();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 context.Response.Close();
                 _errors.Add(ex);
             }
-            RequestCount ++;
+            RequestCount++;
         }
 
         private RequestHandler GetRequestHandler()
@@ -121,7 +121,7 @@ namespace Bandwidth.Iris.Tests
             }
         }
 
-        private readonly List<Exception> _errors = new List<Exception>(); 
+        private readonly List<Exception> _errors = new List<Exception>();
     }
 
     public class RequestHandler
